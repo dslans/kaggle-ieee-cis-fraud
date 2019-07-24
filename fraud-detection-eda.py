@@ -12,14 +12,21 @@ train_trans = pd.read_csv('train_transaction.csv')
 test_id = pd.read_csv('test_identity.csv')
 test_trans = pd.read_csv('test_transaction.csv')
 
+# Rows and Columns of the data
+print('train identity:', train_id.shape)
+print('train transaction:', train_trans.shape)
+print('test identity:', test_id.shape)
+print('test transaction:', test_trans.shape)
+
 # Merge training data sets together and test data sets together
-train = train_id.merge(train_trans, on='TransactionID', how = 'left')
-test = train_id.merge(test_trans, on='TransactionID', how = 'left')
+train = train_trans.merge(train_id, on='TransactionID', how = 'left')
+test = test_trans.merge(test_id, on='TransactionID', how = 'left')
 
-train_id.shape
-train_trans.shape
-train.shape
+# Shapes of the training and test data
+print(f'training data rows: {train.shape[0]}, columns: {train.shape[1]}')
+train.head()
 
-train.columns
+print(f'test data rows: {test.shape[0]}, columns: {test.shape[1]}')
+test.head()
 
-train_trans.head()
+# Missing Data =====
