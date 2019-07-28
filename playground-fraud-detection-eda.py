@@ -13,6 +13,7 @@ train_trans = pd.read_csv('train_transaction.csv')
 test_id = pd.read_csv('test_identity.csv')
 test_trans = pd.read_csv('test_transaction.csv')
 
+
 # Rows and Columns of the data
 print('train identity:', train_id.shape)
 print('train transaction:', train_trans.shape)
@@ -32,7 +33,8 @@ test.head()
 
 
 # Outcome Class -----
-print(train.isFraud.value_counts(),
+print('Outcome Class','----------------',
+train.isFraud.value_counts(),
 train.isFraud.value_counts(normalize=True), sep='\n')
 
 print('Response rate in training data: \
@@ -102,7 +104,18 @@ value_types = pd.DataFrame(value_dict)
 value_types['non_miss_rows'] = len(train) - value_types.missing_values
 value_types['unique_values_pct'] = value_types.unique_values /  \
     value_types.non_miss_rows
-value_types.head(10)
+value_types
+
+train_cat['id_12'].value_counts().plot('barh')
+
+plt.figure(figsize=(10,10))
+train_cat['id_13'].value_counts().plot('barh')
+
+train_cat['id_14'].value_counts().plot('barh')
+
+train_cat['id_15'].value_counts().plot('barh')
+
+train_cat['id_16'].value_counts().plot('barh')
 
 cat_plots = []
 for col in train_cat.columns[[0,4,6]]:
@@ -122,7 +135,7 @@ fig.add_subplot(cat_plots[0])
 
 
 train_cat['ProductCD'].value_counts().plot('barh')
-train_cat['card4'].value_counts().plot('barh')
+train_cat['id_12'].value_counts().plot('barh')
 plt.savefig('plots/cat_vars/temp.png')
 
 # unique values of card2 per card type
