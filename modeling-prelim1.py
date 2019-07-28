@@ -88,7 +88,7 @@ learning_rate = 0.1
 num_leaves = 15
 min_data_in_leaf = 2000
 feature_fraction = 0.6
-num_boost_round = 100
+num_round = 500
 params = {"objective": "binary",
           "boosting_type": "gbdt",
           "learning_rate": learning_rate,
@@ -103,10 +103,9 @@ params = {"objective": "binary",
           "min_child_samples": 10,
           "min_child_weight": 150,
           "min_split_gain": 0,
-          "subsample": 0.9
+          "subsample": 0.9,
+          "random_state": 3
           }
-
-num_round = 10
 
 # Train model
 bst = lgb.train(params, train_data, num_round)
@@ -139,12 +138,19 @@ Predictions using validation data
 ===============================================
 '''
 from sklearn import metrics
+from sklearn.model_selection import GridSearchCV
+
+
 x_train = lgb.Dataset(X_train, label=y_train)
-booster = lgb.train(params, x_train, num_round)
+
+
+validation_data = lgb.Dataset(X_valid, y_valid, reference=x_train)
+booster = lgb.train(params, x_train, num_round, valid_sets=validation_data)
 y_pred = booster.predict(X_valid)
 
 auc = metrics.roc_auc_score(y_valid, y_pred)
 auc
+
 
 # Compute micro-average ROC curve and ROC area
 from sklearn.metrics import roc_curve, auc,recall_score,precision_score
@@ -172,7 +178,8 @@ plt.show()
 ####################################
 i = np.arange(len(tpr)) # index for df
 roc = pd.DataFrame({'fpr' : pd.Series(fpr, index=i),'tpr' : pd.Series(tpr, index = i), '1-fpr' : pd.Series(1-fpr, index = i), 'tf' : pd.Series(tpr - (1-fpr), index = i), 'thresholds' : pd.Series(thresholds, index = i)})
-roc.loc[(roc.tf-0).abs().argsort()[:1]]
+best_threshold = roc.loc[(roc.tf-0).abs().argsort()[:1]]
+print(best_threshold)
 
 # Plot tpr vs 1-fpr
 fig, ax = plt.subplots()
@@ -184,5 +191,69 @@ plt.title('Receiver operating characteristic')
 ax.set_xticklabels([])
 
 
-pred_outcome = [1 if x > 0.345308 else 0 for x in y_pred]
+cutoff = best_threshold.thresholds.values
+pred_outcome = [1 if x > cutoff else 0 for x in y_pred]
 print("Model Accuracy:", metrics.accuracy_score(y_valid, pred_outcome))
+auc = metrics.roc_auc_score(y_valid, y_pred)
+print("AUC:", auc)
+
+
+'''
+===============================================
+Grid Search for best parameters
+===============================================
+'''
+grid_learning_rate = [0.1]
+grid_num_leaves = [15]
+grid_min_data_in_leaf = [200, 2000]
+grid_feature_fraction = [0.6]
+grid_num_round = [100, 500]
+gridParams = {
+    "num_iterations": grid_num_round,
+    "learning_rate": grid_learning_rate,
+    "num_leaves": grid_num_leaves,
+    "feature_fraction": grid_feature_fraction,
+    }
+
+mdl = lgb.LGBMClassifier(
+    objective = "binary",
+    boosting_type = "gbdt",
+    learning_rate = learning_rate,
+    num_leaves = num_leaves,
+    max_bin = 63,
+    feature_fraction = feature_fraction,
+    verbosity = 0,
+    drop_rate = 0.1,
+    is_unbalance = True,
+    # "scale_pos_weight": negatives / positives,
+    max_drop = 50,
+    min_child_samples = 10,
+    min_child_weight = 150,
+    min_split_gain = 0,
+    subsample = 0.9,
+    random_state = 3
+)
+mdl.fit(X_train, y_train)
+# scoring = {'AUC': 'roc_auc'}
+# grid = GridSearchCV(mdl, gridParams, verbose=2, cv=5, scoring=scoring, n_jobs=-1, refit='AUC')
+y_pred = mdl.predict(X_valid)
+
+print("Model Accuracy:", metrics.accuracy_score(y_valid, y_pred))
+auc = metrics.roc_auc_score(y_valid, y_pred)
+print("AUC:", auc)
+
+
+# To view the default model params:
+mdl.get_params().keys()
+
+# Create the grid
+grid = GridSearchCV(mdl, gridParams, scoring='accuracy',
+                    verbose=0,
+                    cv=3,
+                    n_jobs=2)
+# Run the grid
+grid.fit(X_train, y_train)
+
+# Print the best parameters found
+print(grid.best_params_)
+print(grid.best_score_)
